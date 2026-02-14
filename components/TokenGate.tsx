@@ -3,13 +3,14 @@
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { checkAccess } from '@/lib/solana/tokenGate';
+import { checkAccess, isTokenGateConfigured } from '@/lib/solana/tokenGate';
 
 interface Props {
   children: ReactNode;
 }
 
 interface GateResult {
+  configured?: boolean;
   allowed: boolean;
   balance: bigint;
   required: bigint;
@@ -54,6 +55,32 @@ export const TokenGate: FC<Props> = ({ children }) => {
       <div className="flex flex-col items-center justify-center gap-4 p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
         <p className="text-gray-400">Loading...</p>
+      </div>
+    );
+  }
+
+  const configured = isTokenGateConfigured();
+
+  if (!configured) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-8 w-full max-w-xl">
+        <div className="bg-yellow-900/40 border border-yellow-600 text-yellow-200 p-4 rounded-xl w-full">
+          <p className="font-semibold">Token gate not configured</p>
+          <p className="text-sm opacity-90">
+            Missing <code className="font-mono">NEXT_PUBLIC_TOKEN_MINT</code>. Deploy is UI-first; gating will
+            activate once the token mint is set.
+          </p>
+        </div>
+
+        {/* Allow UI-first experience even without gating */}
+        {children}
+
+        {!connected && (
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <p className="text-gray-400 text-center">(Optional) Connect your wallet</p>
+            <WalletMultiButton />
+          </div>
+        )}
       </div>
     );
   }
